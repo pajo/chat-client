@@ -1,102 +1,117 @@
-var Primus = require('primus'), 
-    _ = require('lodash-node'),
-    wnd = require('./window');
+var Primus = require('primus'); 
 
 var Socket = Primus.createSocket({ transformer: 'websockets' })
   , client = new Socket('http://localhost:8080');
 
-var messagesWnd = wnd.createWindow({
-  width: 55,
-  height: 60,
-  title: 'Poruke'
-});
+module.exports = {
+  join: join,
+  leave: leave,
+  sendMessage: sendMessage,
+  onmessage: onFactory('message'),
+  onjoin: onFactory('join'),
+  onleave: onFactory('leave')
+}
 
-var participantsWnd = wnd.createWindow({
-  width: 25,
-  height: 60,
-  left: 55,
-  title: 'Ekipa'
-});
-
-var infoWnd = wnd.createWindow({
-  width: 80,
-  height: 2,
-  top: 61,
-  title: 'Info'
-});
-
-var newMessage = wnd.createWindow({
-  width: 80,
-  height: 4,
-  top: 63,
-  title: 'Nova poruka',
-  input: function (message) {
-    client.write({
-      type: 'message',
-      message: message
-    });
-  }
-});
-
-client.write({
-  type: 'join',
-  name: 'pajo',
-  group: 'borg'
-});
-
-var users = [];
-var colors = {
-  'borg': 'red'
-};
+var users = [],
+    messageId = 0,
+    promises = {},
+    handlers = {};
 
 client.on('data', function (message) {
   switch (message.type) {
     case 'server-info':
-      users = message.users;
-      renderParticipants();
-      
-      client.write({
-        type: 'message',
-        message: 'jea'
+      var promise = promises[message.id];
+      promise.resolve({
+        users: message.users  
       });
+      delete promises[message.id];
       break;
     case 'welcome':
-      users.push({
-        name: message.name,
-        group: message.group
-      });
-      
-      renderParticipants();
-      break;
-    case 'message':
-      var options = {};
-      
-      var color = colors[message.group];
-      if (color) {
-        options.color = color;
+      if (handlers.join) { 
+        handlers.join({
+          name: message.name,
+          race: message.group
+        });
       }
-      
-      messagesWnd.write(message.name + ':', options);
-      messagesWnd.write(message.message, options);
+      break;
+    case 'goodbye':
+      if (message.id) {
+        var promise = promises[message.id];
+        promise.resolve();
+        delete promises[message.id];
+      } else {
+        if (handlers.leave) { 
+          handlers.leave({
+            name: message.name,
+            race: message.group
+          });
+        }
+      }
+      break;      
+    case 'message':
+      if (handlers.message) { 
+        handlers.message({
+          from: {
+            name: message.name,
+            race: message.group
+          },
+          message: message    
+        });
+      }
       break;
     case 'error':
-      throw message.message;  
+      if (message.id) {
+        var promise = promises[message.id];
+        promise.reject({
+          message: message.message
+        });
+        delete promises[message.id];
+      } else {
+        throw message.message;
+      } 
+      break; 
   }
 });
 
-function renderParticipants() {
-  participantsWnd.write(_.map(users, function (user) { return `${ user.name }(${ user.group })`; }).join('\n'), { clear: true });
+function onFactory(handlerName) {
+  return function(handler) {
+    handlers[handlerName] = handler;
+  };
 }
 
-messagesWnd.write(
-`Darth Vader:
-Luke the force is weak with you. And I'm your father!
-`);
+function leave() {
+  return new Promise(function (resolve, reject) {
+    promises[messageId++] = {
+      resolve: resolve,
+      reject: reject
+    };
+    
+    client.write({
+      id: messageId,
+      type: 'leave'
+    });
+  });
+}
 
-messagesWnd.write(
-`Luke Skywalker:
-I'm gonna boba fet your mother and shit on ya face madafucker!!!
-`);
+function join(user) {
+  return new Promise(function (resolve, reject) {
+    promises[messageId++] = {
+      resolve: resolve,
+      reject: reject
+    };
+    
+    client.write({
+      id: messageId,
+      type: 'join',
+      name: user.name,
+      group: user.group
+    });
+  });
+}
 
-
-
+function sendMessage(message) {
+  client.write({
+    type: 'message',
+    message: message
+  });
+}
