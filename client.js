@@ -1,28 +1,33 @@
-var stdin = process.openStdin();
-var tty = require('tty');
-//process.stdin.setRawMode(true);    
+var Primus = require('primus'),
+    wnd = require('./window');
 
-var ansi = require('ansi')
-  , cursor = ansi(process.stdout);
+var Socket = Primus.createSocket({ transformer: 'websockets' })
+  , client = new Socket('http://localhost:8080');
 
-console.log(`is TTY: ${process.stdout.isTTY}`);
-var colors = [ 'red', 'cyan', 'yellow', 'green', 'blue' ];
+client.write('jea');
 
-var pos = 1;
-
-cursor
-	.goto(1, 1)
-	.red();
-
-stdin.on('keypress', function (chunk, key) {
-	cursor
-		.goto(1, pos)
-		.write(chunk);
-	
-	pos += chunk.length;	
-  	if (key && key.ctrl && key.name == 'c') {
-		cursor.reset();
-		process.exit();  
-	} 
+var messagesWnd = wnd.createWindow({
+  width: 55,
+  height: 60,
+  title: 'Poruke'
 });
+
+var participantsWnd = wnd.createWindow({
+  width: 25,
+  height: 60,
+  left: 55,
+  title: 'Ekipa'
+});
+
+messagesWnd.write(
+`Darth Vader:
+Luke the force is weak with you. And I'm your father!
+`);
+
+messagesWnd.write(
+`Luke Skywalker:
+I'm gonna boba fet your mother and shit on ya face madafucker!!!
+`);
+
+
 
