@@ -23,6 +23,7 @@
   "homepage": "https://github.com/pajo/chat-client#readme",
   "dependencies": {
     "ansi": "^0.3.0",
+    "lodash-node": "^3.10.1",
     "primus": "^4.0.4",
     "ws": "^0.8.1"
   }

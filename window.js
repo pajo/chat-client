@@ -34,8 +34,11 @@ function Window(options) {
 			.write(header)
 			.reset()
 	}
+	
+	if (options.input) {
+		listenKeys(options.input);	
+	};
 			
-	this.listenKeys = listenKeys;
 	this.write = write;
 	
 	function write(text, options) {
@@ -64,13 +67,19 @@ function Window(options) {
 						currentIndex = lineStartIndex + width;
 					}
 					
-					content.push(sentence.substring(lineStartIndex, currentIndex - lineStartIndex));
+					content.push({
+						color: options.color || 'white',
+						text: sentence.substring(lineStartIndex, currentIndex - lineStartIndex)
+					});
 					lineStartIndex = currentIndex;
 					currentIndex = lineStartIndex + width;
 				}
 				
 				if (lineStartIndex < sentence.length) {
-					content.push(sentence.substring(lineStartIndex));
+					content.push({
+						color: options.color || 'white',
+						text: sentence.substring(lineStartIndex)
+					});
 				}
 			});
 		}
@@ -83,14 +92,16 @@ function Window(options) {
 			lineIndex = y,
 			index = Math.max(l - height, 0);
 		
-		if (options.color) {
-				
-		}
-					
 		for	(index; index < l; index++) {
+			var line = content[index];
+			
+			if (cursor.fg[line.color]) {
+				cursor.fg[line.color]();
+			}
+			
 			cursor
 				.goto(x, lineIndex++)
-				.write(content[index]);	
+				.write(line.text);	
 		}
 		
 		if (options.clear) {
@@ -105,17 +116,18 @@ function Window(options) {
 		cursor.reset();
 	}
 	
-	function listenKeys() {
+	function listenKeys(cb) {
 		var stdin = process.openStdin();
 		
 		stdin.on('keypress', function (chunk, key) {
-			cursor
-				.goto(1, pos)
-				.write(chunk);
+			var text = content.push(chunk).join('');
+			this.write(text);
 			
-			pos += chunk.length;	
+			if (cb) {
+				cb(key);
+			}
+				
 			if (key && key.ctrl && key.name == 'c') {
-				cursor.reset();
 				process.exit();  
 			} 
 		});
