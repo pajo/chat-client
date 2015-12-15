@@ -1,7 +1,8 @@
+
 var Primus = require('primus'); 
 
-var Socket = Primus.createSocket({ transformer: 'websockets' })
-  , client = new Socket('http://localhost:8080');
+var Socket = Primus.createSocket({ transformer: 'websockets' }),
+    client;
 
 module.exports = {
   join: join,
@@ -17,62 +18,6 @@ var users = [],
     promises = {},
     handlers = {};
 
-client.on('data', function (message) {
-  switch (message.type) {
-    case 'server-info':
-      var promise = promises[message.id];
-      promise.resolve({
-        users: message.users  
-      });
-      delete promises[message.id];
-      break;
-    case 'welcome':
-      if (handlers.join) { 
-        handlers.join({
-          name: message.name,
-          race: message.group
-        });
-      }
-      break;
-    case 'goodbye':
-      if (message.id) {
-        var promise = promises[message.id];
-        promise.resolve();
-        delete promises[message.id];
-      } else {
-        if (handlers.leave) { 
-          handlers.leave({
-            name: message.name,
-            race: message.group
-          });
-        }
-      }
-      break;      
-    case 'message':
-      if (handlers.message) { 
-        handlers.message({
-          from: {
-            name: message.name,
-            race: message.group
-          },
-          message: message    
-        });
-      }
-      break;
-    case 'error':
-      if (message.id) {
-        var promise = promises[message.id];
-        promise.reject({
-          message: message.message
-        });
-        delete promises[message.id];
-      } else {
-        throw message.message;
-      } 
-      break; 
-  }
-});
-
 function onFactory(handlerName) {
   return function(handler) {
     handlers[handlerName] = handler;
@@ -81,7 +26,7 @@ function onFactory(handlerName) {
 
 function leave() {
   return new Promise(function (resolve, reject) {
-    promises[messageId++] = {
+    promises[messageId] = {
       resolve: resolve,
       reject: reject
     };
@@ -90,12 +35,72 @@ function leave() {
       id: messageId,
       type: 'leave'
     });
+    
+    messageId++;
   });
 }
 
-function join(user) {
+function join(serverAddress, user) {
+  client = new Socket(serverAddress);
+  
+  client.on('data', function (message) {
+    switch (message.type) {
+      case 'server-info':
+        var promise = promises[message.id];
+        promise.resolve({
+          users: message.users  
+        });
+        delete promises[message.id];
+        break;
+      case 'welcome':
+        if (handlers.join) { 
+          handlers.join({
+            name: message.name,
+            group: message.group
+          });
+        }
+        break;
+      case 'goodbye':
+        if (message.id !== undefined) {
+          var promise = promises[message.id];
+          promise.resolve();
+          delete promises[message.id];
+        } else {
+          if (handlers.leave) { 
+            handlers.leave({
+              name: message.name,
+              group: message.group
+            });
+          }
+        }
+        break;      
+      case 'message':
+        if (handlers.message) { 
+          handlers.message({
+            from: {
+              name: message.name,
+              group: message.group
+            },
+            message: message    
+          });
+        }
+        break;
+      case 'error':
+        if (message.id !== undefined) {
+          var promise = promises[message.id];
+          promise.reject({
+            message: message.message
+          });
+          delete promises[message.id];
+        } else {
+          throw message.message;
+        } 
+        break; 
+    }
+  });
+  
   return new Promise(function (resolve, reject) {
-    promises[messageId++] = {
+    promises[messageId] = {
       resolve: resolve,
       reject: reject
     };
@@ -106,6 +111,8 @@ function join(user) {
       name: user.name,
       group: user.group
     });
+    
+    messageId++;
   });
 }
 

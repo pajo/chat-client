@@ -67,9 +67,11 @@ function Window(options) {
 						currentIndex = lineStartIndex + width;
 					}
 					
+					var totalCharacters = currentIndex - lineStartIndex;
+					var spaces = new Array(width - totalCharacters).join(' ');
 					content.push({
 						color: options.color || 'white',
-						text: sentence.substring(lineStartIndex, currentIndex - lineStartIndex)
+						text: sentence.substring(lineStartIndex, currentIndex - lineStartIndex) + spaces
 					});
 					lineStartIndex = currentIndex;
 					currentIndex = lineStartIndex + width;
