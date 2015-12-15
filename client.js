@@ -54,10 +54,7 @@ function join(serverAddress, user) {
         break;
       case 'welcome':
         if (handlers.join) { 
-          handlers.join({
-            name: message.name,
-            group: message.group
-          });
+          handlers.join(message.user);
         }
         break;
       case 'goodbye':
@@ -67,10 +64,7 @@ function join(serverAddress, user) {
           delete promises[message.id];
         } else {
           if (handlers.leave) { 
-            handlers.leave({
-              name: message.name,
-              group: message.group
-            });
+            handlers.leave(message.user);
           }
         }
         break;      

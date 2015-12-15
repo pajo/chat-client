@@ -87,7 +87,7 @@ function Window(options) {
 		var spaces = new Array(width - sentence.length).join(' ');
 		content.push({
 			color: options.color || 'white',
-			text: sentence + spaces
+			text: (sentence + spaces).substring(0, width)
 		});
 	}
 	
