@@ -136,6 +136,12 @@ function Window(options) {
 				case 3:
 					process.exit();
 					break;
+				case 8:
+					if (buffer.length > 0) {
+						buffer = buffer.substring(0, buffer.length - 1);
+						write(buffer, { clear: true });	
+					}
+				break;
 				case 13:
 					if (cb) {
 						cb(buffer);
