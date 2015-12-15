@@ -68,14 +68,14 @@ function Window(options) {
 						currentIndex = lineStartIndex + width;
 					}
 					
-					addSentence(sentence.substring(lineStartIndex, currentIndex - lineStartIndex));
+					addSentence(sentence.substring(lineStartIndex, currentIndex - lineStartIndex), options);
 					
 					lineStartIndex = currentIndex;
 					currentIndex = lineStartIndex + width;
 				}
 				
 				if (lineStartIndex < sentence.length) {
-					addSentence(sentence.substring(lineStartIndex));
+					addSentence(sentence.substring(lineStartIndex), options);
 				}
 			});
 		}
@@ -83,7 +83,7 @@ function Window(options) {
 		render(options);
 	}
 	
-	function addSentence(sentence) {
+	function addSentence(sentence, options) {
 		var spaces = new Array((width - sentence.length) + 1).join(' ');
 		content.push({
 			color: options.color || 'white',
@@ -124,34 +124,43 @@ function Window(options) {
 		cursor.reset();
 	}
 	
-	function listenKeys(cb) {
-		var stdin = process.openStdin();
-		
-		stdin.on('keypress', function (chunk, key) {
-			var text = content.push(chunk).join('');
-			this.write(text);
-			
-			if (cb) {
-				cb(key);
+	function toUnicode(theString) {
+		var unicodeString = '';
+		for (var i=0; i < theString.length; i++) {
+			var theUnicode = theString.charCodeAt(i).toString(16).toUpperCase();
+			while (theUnicode.length < 4) {
+			theUnicode = '0' + theUnicode;
 			}
-				
-			if (key && key.ctrl && key.name == 'c') {
-				process.exit();  
-			} 
+			theUnicode = '\\u' + theUnicode;
+			unicodeString += theUnicode;
+		}
+		return unicodeString;
+	}
+	
+	function listenKeys(cb) {
+		process.stdin.setRawMode(true);
+		process.stdin.resume();
+		
+		var buffer = '';
+		
+		process.stdin.on('data', function (key) {
+			var char = key + '';	
+			switch (char.charCodeAt(0)) {
+				case 3:
+					process.exit();
+					break;
+				case 13:
+					if (cb) {
+						cb(buffer);
+					}
+					buffer = '';
+					write(buffer, { clear: true });
+					break;
+				default:
+					buffer += char;
+					write(buffer, { clear: true });
+					break;
+			}
 		});
 	}
 }
-
-
-//process.stdin.setRawMode(true);    
-
-
-// console.log(`is TTY: ${process.stdout.isTTY}`);
-// var colors = [ 'red', 'cyan', 'yellow', 'green', 'blue' ];
-// 
-// var pos = 1;
-// 
-// cursor
-// 	.goto(1, 1)
-// 	.red();
-

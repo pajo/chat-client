@@ -77,11 +77,8 @@ function join(serverAddress, user) {
       case 'message':
         if (handlers.message) { 
           handlers.message({
-            from: {
-              name: message.name,
-              group: message.group
-            },
-            message: message    
+            from: message.from,
+            message: message.message    
           });
         }
         break;
