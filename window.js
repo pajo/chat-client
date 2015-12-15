@@ -67,26 +67,27 @@ function Window(options) {
 						currentIndex = lineStartIndex + width;
 					}
 					
-					var totalCharacters = currentIndex - lineStartIndex;
-					var spaces = new Array(width - totalCharacters).join(' ');
-					content.push({
-						color: options.color || 'white',
-						text: sentence.substring(lineStartIndex, currentIndex - lineStartIndex) + spaces
-					});
+					addSentence(sentence.substring(lineStartIndex, currentIndex - lineStartIndex));
+					
 					lineStartIndex = currentIndex;
 					currentIndex = lineStartIndex + width;
 				}
 				
 				if (lineStartIndex < sentence.length) {
-					content.push({
-						color: options.color || 'white',
-						text: sentence.substring(lineStartIndex)
-					});
+					addSentence(sentence);
 				}
 			});
 		}
 		
 		render(options);
+	}
+	
+	function addSentence(sentence) {
+		var spaces = new Array((width - sentence.length) + 1).join(' ');
+		content.push({
+			color: options.color || 'white',
+			text: sentence + spaces
+		});
 	}
 	
 	function render(options) {
@@ -102,17 +103,21 @@ function Window(options) {
 			}
 			
 			cursor
-				.goto(x, lineIndex++)
-				.write(line.text);	
+				.goto(x, lineIndex)
+				.write(line.text);
+				
+			lineIndex++;	
 		}
 		
 		if (options.clear) {
 			var clearLine = new Array(width + 1).join(' ');
 			for (index; index < height; index++) {
 				cursor
-					.goto(x, lineIndex++)
+					.goto(x, lineIndex)
 					.write(clearLine);	
 			}
+			
+			lineIndex++;
 		}
 		
 		cursor.reset();
