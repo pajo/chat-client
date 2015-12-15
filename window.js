@@ -137,6 +137,7 @@ function Window(options) {
 					process.exit();
 					break;
 				case 8:
+				case 127:
 					if (buffer.length > 0) {
 						buffer = buffer.substring(0, buffer.length - 1);
 						write(buffer, { clear: true });	
