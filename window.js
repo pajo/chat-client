@@ -18,6 +18,7 @@ function Window(options) {
 		titleOffset = title ? 1 : 0,
 		x = options.left || 1,
 		y = (options.top || 1) + titleOffset,
+		trueHeight = height - titleOffset,
 		content = [];
 	
 	if (titleOffset > 0) {
@@ -74,7 +75,7 @@ function Window(options) {
 				}
 				
 				if (lineStartIndex < sentence.length) {
-					addSentence(sentence);
+					addSentence(sentence.substring(lineStartIndex));
 				}
 			});
 		}
@@ -93,7 +94,7 @@ function Window(options) {
 	function render(options) {
 		var l = content.length,
 			lineIndex = y,
-			index = Math.max(l - height, 0);
+			index = Math.max(l - trueHeight, 0);
 		
 		for	(index; index < l; index++) {
 			var line = content[index];
