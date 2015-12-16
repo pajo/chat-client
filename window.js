@@ -1,4 +1,6 @@
-var ansi = require('ansi'),
+var Stream = require('stream'),
+	endOfLine = require('os').EOL, 
+	ansi = require('ansi'),
    	cursor = ansi(process.stdout);
 
 module.exports = {
@@ -19,7 +21,21 @@ function Window(options) {
 		x = options.left || 1,
 		y = (options.top || 1) + titleOffset,
 		trueHeight = height - titleOffset,
-		content = [];
+		content = [],
+		stream = new Stream();
+
+	stream.write = function(data) {
+		write(data);
+		return stream;
+	};
+	
+	stream.pipe = function (dest) {
+		stream.on('data', function(data) {
+			dest.write(data);
+		});
+		
+		return stream;
+	}
 	
 	if (titleOffset > 0) {
 		var headerTitle = title.substring(0, width - 6),
@@ -39,8 +55,9 @@ function Window(options) {
 	if (options.input) {
 		listenKeys(options.input);	
 	};
-			
-	this.write = write;
+	
+	this.write = write;			
+	this.getWindowStream = getWindowStream;
 	
 	function write(text, options) {
 		options = options || {};
@@ -78,6 +95,8 @@ function Window(options) {
 					addSentence(sentence.substring(lineStartIndex), options);
 				}
 			});
+			
+			stream.emit('data', text + endOfLine);
 		}
 		
 		render(options);
@@ -122,6 +141,10 @@ function Window(options) {
 		}
 		
 		cursor.reset();
+	}
+	
+	function getWindowStream() {
+		return stream;
 	}
 	
 	function listenKeys(cb) {
